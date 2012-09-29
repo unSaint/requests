@@ -218,7 +218,7 @@ class Request(object):
 
             # Save original response for later.
             response.raw = resp
-            if isinstance(self.full_url, bytes):
+            if hasattr(self.full_url, 'decode'):
                 response.url = self.full_url.decode('utf-8')
             else:
                 response.url = self.full_url
@@ -336,8 +336,8 @@ class Request(object):
                 for v in isinstance(vs, list) and vs or [vs]:
                     if v is not None:
                         result.append(
-                            (k.encode('utf-8') if isinstance(k, str) else k,
-                             v.encode('utf-8') if isinstance(v, str) else v))
+                            (k.encode('utf-8') if hasattr(k, 'encode') else k,
+                             v.encode('utf-8') if hasattr(v, 'encode') else v))
             return urlencode(result, doseq=True)
         else:
             return data
@@ -358,15 +358,14 @@ class Request(object):
         files = to_key_val_list(files)
 
         for field, val in fields:
-            if isinstance(val, list):
-                for v in val:
-                    new_fields.append((field, str(v)))
+            if hasattr(val, '__iter__') and not isinstance(val, (str, bytes)):
+                new_fields.extend((field, str(v)) for v in val)
             else:
                 new_fields.append((field, str(val)))
 
         for (k, v) in files:
             # support for explicit filename
-            if isinstance(v, (tuple, list)):
+            if hasattr(v, '__iter__') and not isinstance(v, (str, bytes)):
                 fn, fp = v
             else:
                 fn = guess_filename(v) or k
@@ -408,17 +407,17 @@ class Request(object):
             path = '/'
 
         if is_py2:
-            if isinstance(scheme, str):
+            if hasattr(scheme, 'encode'):
                 scheme = scheme.encode('utf-8')
-            if isinstance(netloc, str):
+            if hasattr(netloc, 'encode'):
                 netloc = netloc.encode('utf-8')
-            if isinstance(path, str):
+            if hasattr(path, 'encode'):
                 path = path.encode('utf-8')
-            if isinstance(params, str):
+            if hasattr(params, 'encode'):
                 params = params.encode('utf-8')
-            if isinstance(query, str):
+            if hasattr(query, 'encode'):
                 query = query.encode('utf-8')
-            if isinstance(fragment, str):
+            if hasattr(fragment, 'encode'):
                 fragment = fragment.encode('utf-8')
 
         enc_params = self._encode_params(self.params)
@@ -462,10 +461,10 @@ class Request(object):
 
     def register_hook(self, event, hook):
         """Properly register a hook."""
-        if isinstance(hook, (list, tuple, set)):
-            self.hooks[event].extend(hook)
-        else:
+        if callable(hook):
             self.hooks[event].append(hook)
+        elif hasattr(hook, '__iter__'):
+            self.hooks.extend(h for h in hook if callable(h))
 
     def deregister_hook(self, event, hook):
         """Deregister a previously registered hook.
@@ -510,7 +509,7 @@ class Request(object):
             self.auth = get_netrc_auth(url)
 
         if self.auth:
-            if isinstance(self.auth, tuple) and len(self.auth) == 2:
+            if hasattr(self.auth, '__iter__') and len(self.auth) == 2:
                 # special-case basic HTTP auth
                 self.auth = HTTPBasicAuth(*self.auth)
 
