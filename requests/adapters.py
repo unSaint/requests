@@ -150,6 +150,11 @@ class HTTPAdapter(BaseAdapter):
     def send(self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None):
         """Sends PreparedRequest object. Returns Response object."""
 
+        # It's possible that users might accidentally send a Request object.
+        # Guard against that specific failure case.
+        if getattr(request, 'prepare', None):
+            raise ValueError('You can only send PreparedRequests.')
+
         conn = self.get_connection(request.url, proxies)
 
         self.cert_verify(conn, request.url, verify, cert)

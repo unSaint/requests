@@ -325,6 +325,9 @@ class RequestsTestCase(unittest.TestCase):
         r = requests.get(httpbin('get'))
         self.assertTrue(r.elapsed.total_seconds() > 0.0)
 
+    def test_cannot_send_unprepared_requests(self):
+        r = requests.Request(url = HTTPBIN)
+        self.assertRaises(ValueError, requests.Session().send, r)
 
 if __name__ == '__main__':
     unittest.main()
