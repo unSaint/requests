@@ -366,6 +366,12 @@ class Session(SessionRedirectMixin):
 
     def send(self, request, **kwargs):
         """Send a given PreparedRequest."""
+
+        # It's possible that users might accidentally send a Request object.
+        # Guard against that specific failure case.
+        if getattr(request, 'prepare', None):
+            raise ValueError('You can only send PreparedRequests.')
+
         hooks = request.hooks
         adapter = self.get_adapter(url=request.url)
         r = adapter.send(request, **kwargs)
