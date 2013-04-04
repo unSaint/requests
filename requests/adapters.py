@@ -21,7 +21,6 @@ from .packages.urllib3.exceptions import MaxRetryError
 from .packages.urllib3.exceptions import TimeoutError
 from .packages.urllib3.exceptions import SSLError as _SSLError
 from .packages.urllib3.exceptions import HTTPError as _HTTPError
-from .cookies import extract_cookies_to_jar
 from .exceptions import ConnectionError, Timeout, SSLError
 from .auth import _basic_auth_str
 
@@ -120,9 +119,6 @@ class HTTPAdapter(BaseAdapter):
             response.url = req.url.decode('utf-8')
         else:
             response.url = req.url
-
-        # Add new cookies from the server.
-        extract_cookies_to_jar(response.cookies, req, resp)
 
         # Give the Response some context.
         response.request = req

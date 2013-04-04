@@ -12,7 +12,7 @@ import os
 from datetime import datetime
 
 from .compat import cookielib
-from .cookies import cookiejar_from_dict
+from .cookies import cookiejar_from_dict, extract_cookies_to_jar
 from .models import Request, PreparedRequest
 from .hooks import default_hooks, dispatch_hook
 from .utils import from_key_val_list, default_headers
@@ -346,6 +346,7 @@ class Session(SessionRedirectMixin):
             'cert': cert,
             'proxies': proxies,
             'allow_redirects': allow_redirects,
+            'req': req,
         }
         resp = self.send(prep, **send_kwargs)
 
@@ -445,6 +446,7 @@ class Session(SessionRedirectMixin):
         verify = kwargs.get('verify')
         cert = kwargs.get('cert')
         proxies = kwargs.get('proxies')
+        req = kwargs.pop('req', None)
         hooks = request.hooks
 
         # Get the appropriate adapter to use
@@ -456,6 +458,12 @@ class Session(SessionRedirectMixin):
         r = adapter.send(request, **kwargs)
         # Total elapsed time of the request (approximately)
         r.elapsed = datetime.utcnow() - start
+
+        # Add the original request's cookies to the response
+        if req:
+            r.cookies.update(req.cookies)
+        # Add new cookies from the server. And update the rest.
+        extract_cookies_to_jar(r.cookies, r.request, r.raw)
 
         # Response manipulation hooks
         r = dispatch_hook('response', hooks, r, **kwargs)
