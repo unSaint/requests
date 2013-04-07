@@ -29,6 +29,12 @@ class ConnectionError(RequestException):
 
 class SSLError(ConnectionError):
     """An SSL error occurred."""
+    def __init__(self, exception):
+        # First extract the real underlying exception
+        exception = exception.args[0]
+        super(SSLError, self).__init__(exception)
+        self.strerror = exception.strerror
+        self.errno = exception.errno
 
 
 class Timeout(RequestException):
